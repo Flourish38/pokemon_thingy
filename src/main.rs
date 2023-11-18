@@ -1,9 +1,12 @@
+use std::collections::HashMap;
+
+#[derive(PartialEq, Clone, Copy)]
 enum Type {
     Normal,
     Fire,
     Water,
-    Grass,
     Electric,
+    Grass,
     Ice,
     Fighting,
     Poison,
@@ -186,22 +189,106 @@ trait Move {
     }
 }
 
+fn half_down(x: f32) -> f32 {
+    if x.fract() <= 0.5 {
+        x.floor()
+    } else {
+        x.ceil()
+    }
+}
+
+/*
+// This is the same thing but didn't get changed for some reason by the formatting... -_-
+
+const TYPE_EFFECTIVENESS: [f32; 324] = [
+//  NOR  FIR  WAT  ELE  GRA  ICE  FIG  POI  GRO  FLY  PSY  BUG  ROC  GHO  DRA  DAR  STE  FAI
+    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.0, 1.0, 0.5, 1.0,
+    1.0, 0.5, 0.5, 1.0, 2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 0.5, 1.0, 0.5, 1.0, 2.0, 1.0,
+    1.0, 2.0, 0.5, 1.0, 0.5, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 2.0, 1.0, 0.5, 1.0, 1.0, 1.0,
+    1.0, 1.0, 2.0, 0.5, 0.5, 1.0, 1.0, 1.0, 0.0, 2.0, 1.0, 1.0, 1.0, 1.0, 0.5, 1.0, 1.0, 1.0,
+    1.0, 0.5, 2.0, 1.0, 0.5, 1.0, 1.0, 0.5, 2.0, 0.5, 1.0, 0.5, 2.0, 1.0, 0.5, 1.0, 0.5, 1.0,
+    1.0, 0.5, 0.5, 1.0, 2.0, 0.5, 1.0, 1.0, 2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 0.5, 1.0,
+    2.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 0.5, 1.0, 0.5, 0.5, 0.5, 2.0, 0.0, 1.0, 2.0, 2.0, 0.5,
+    1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 0.5, 0.5, 1.0, 1.0, 1.0, 0.5, 0.5, 1.0, 1.0, 0.0, 2.0,
+    1.0, 2.0, 1.0, 2.0, 0.5, 1.0, 1.0, 2.0, 1.0, 0.0, 1.0, 0.5, 2.0, 1.0, 1.0, 1.0, 2.0, 1.0,
+    1.0, 1.0, 1.0, 0.5, 2.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 2.0, 0.5, 1.0, 1.0, 1.0, 0.5, 1.0,
+    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 1.0, 1.0, 0.5, 1.0, 1.0, 1.0, 1.0, 0.0, 0.5, 1.0,
+    1.0, 0.5, 1.0, 1.0, 2.0, 1.0, 0.5, 0.5, 1.0, 0.5, 2.0, 1.0, 1.0, 0.5, 1.0, 2.0, 0.5, 0.5,
+    1.0, 2.0, 1.0, 1.0, 1.0, 2.0, 0.5, 1.0, 0.5, 2.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 0.5, 1.0,
+    0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 2.0, 1.0, 0.5, 1.0, 1.0,
+    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 0.5, 0.0,
+    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 2.0, 1.0, 0.5, 1.0, 0.5,
+    1.0, 0.5, 0.5, 0.5, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 0.5, 2.0,
+    1.0, 0.5, 1.0, 1.0, 1.0, 1.0, 2.0, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 0.5, 1.0,
+];
+*/
+
+const TYPE_EFFECTIVENESS: [f32; 324] = [
+    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.0, 1.0, 0.5, 1.0, 1.0,
+    0.5, 0.5, 1.0, 2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 0.5, 1.0, 0.5, 1.0, 2.0, 1.0, 1.0, 2.0,
+    0.5, 1.0, 0.5, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 2.0, 1.0, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0,
+    0.5, 0.5, 1.0, 1.0, 1.0, 0.0, 2.0, 1.0, 1.0, 1.0, 1.0, 0.5, 1.0, 1.0, 1.0, 1.0, 0.5, 2.0, 1.0,
+    0.5, 1.0, 1.0, 0.5, 2.0, 0.5, 1.0, 0.5, 2.0, 1.0, 0.5, 1.0, 0.5, 1.0, 1.0, 0.5, 0.5, 1.0, 2.0,
+    0.5, 1.0, 1.0, 2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 0.5, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 2.0,
+    1.0, 0.5, 1.0, 0.5, 0.5, 0.5, 2.0, 0.0, 1.0, 2.0, 2.0, 0.5, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0,
+    0.5, 0.5, 1.0, 1.0, 1.0, 0.5, 0.5, 1.0, 1.0, 0.0, 2.0, 1.0, 2.0, 1.0, 2.0, 0.5, 1.0, 1.0, 2.0,
+    1.0, 0.0, 1.0, 0.5, 2.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 0.5, 2.0, 1.0, 2.0, 1.0, 1.0,
+    1.0, 1.0, 2.0, 0.5, 1.0, 1.0, 1.0, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 1.0, 1.0,
+    0.5, 1.0, 1.0, 1.0, 1.0, 0.0, 0.5, 1.0, 1.0, 0.5, 1.0, 1.0, 2.0, 1.0, 0.5, 0.5, 1.0, 0.5, 2.0,
+    1.0, 1.0, 0.5, 1.0, 2.0, 0.5, 0.5, 1.0, 2.0, 1.0, 1.0, 1.0, 2.0, 0.5, 1.0, 0.5, 2.0, 1.0, 2.0,
+    1.0, 1.0, 1.0, 1.0, 0.5, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0,
+    2.0, 1.0, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+    2.0, 1.0, 0.5, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 2.0, 1.0,
+    0.5, 1.0, 0.5, 1.0, 0.5, 0.5, 0.5, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0,
+    0.5, 2.0, 1.0, 0.5, 1.0, 1.0, 1.0, 1.0, 2.0, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 0.5,
+    1.0,
+];
+
+fn type_effectiveness(a: Type, d: Type) -> f32 {
+    TYPE_EFFECTIVENESS[(a as usize) * 18 + d as usize]
+}
+
 fn damage_calc(
-    level: u8,
+    state: &State,
+    user: usize,
+    target: usize,
+    typ: Type,
+    category: Category,
     power: u16,
-    a: u16,
-    d: u16,
-    stab: f32,
-    typ: f32,
-    critrate: u8,
-) -> std::collections::HashMap<u32, f32> {
-    todo!()
+) -> Vec<f32> {
+    let user = state[user].as_ref().unwrap();
+    let target = state[target].as_ref().unwrap();
+    let stab = match user.typ {
+        (t, _) | (_, Some(t)) if t == typ => 1.5,
+        (_, _) => 1.,
+    };
+    let typ = type_effectiveness(typ, target.typ.0)
+        * match target.typ.1 {
+            None => 1.,
+            Some(t) => type_effectiveness(typ, t),
+        };
+    let (a, d) = match category {
+        Category::Physical => (user.stats.atk as f32, target.stats.def as f32),
+        Category::Special => (user.stats.spa as f32, target.stats.spd as f32),
+        Category::Status => panic!(),
+    };
+    let base_damage: f32 =
+        half_down(((((2. * (user.level as f32)) / 5. + 2.) * (power as f32) * a / d) / 50. + 2.));
+    //let crit_damage = (base_damage * 1.5).floor();
+    let mut output = Vec::new();
+    for random in 85..101 {
+        let after_random = ((base_damage * random as f32) / 100.).floor();
+        let after_stab = half_down(after_random * stab);
+        let after_type = (after_stab * typ).floor();
+        output.push(after_type);
+    }
+    output
 }
 
 struct Pokemon {
     stats: &'static Stats,
     typ: (Type, Option<Type>),
-    tera_type: Type,
+    /*tera_type: Type,
     moves: (
         Box<dyn Move>,
         Option<Box<dyn Move>>,
@@ -209,15 +296,45 @@ struct Pokemon {
         Option<Box<dyn Move>>,
     ),
     condition: Option<Status>,
-    current_hp: [f32; 512],
+    current_hp: [f32; 512],*/
+    level: u8,
 }
 
 type State = [Option<Pokemon>; 12];
 
+const ABOMASNOW_STATS: Stats = Stats {
+    hp: 363,
+    atk: 198,
+    def: 186,
+    spa: 311,
+    spd: 206,
+    spe: 178,
+};
+
 fn main() {
-    println!(
-        "{}\t{}",
-        std::mem::align_of::<(f32, u32)>(),
-        std::mem::align_of::<(f32, u16)>()
-    );
+    let state: State = [
+        Some(Pokemon {
+            stats: &ABOMASNOW_STATS,
+            typ: (Type::Grass, Some(Type::Ice)),
+            level: 100,
+        }),
+        Some(Pokemon {
+            stats: &ABOMASNOW_STATS,
+            typ: (Type::Grass, Some(Type::Ice)),
+            level: 100,
+        }),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    ];
+    for x in damage_calc(&state, 0, 1, Type::Ice, Category::Special, 110) {
+        println!("{}", x);
+    }
 }
